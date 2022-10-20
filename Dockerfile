@@ -58,7 +58,8 @@ RUN apt update && apt install -y libirrlicht-dev libnvidia-gl-515 libeigen3-dev 
 # Clean up to reduce image size
 RUN apt-get clean && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://uwmadison.box.com/shared/static/97fkm979iuccls990ottx5g5bpva8pwe.sh -O optix75.sh
+#RUN wget https://uwmadison.box.com/shared/static/97fkm979iuccls990ottx5g5bpva8pwe.sh -O optix75.sh
+COPY NVIDIA-OptiX-SDK-7.5.0-linux64-x86_64.sh ./optix75.sh
 RUN chmod +x optix75.sh
 RUN mkdir /opt/optix75
 RUN ./optix75.sh --prefix=/opt/optix75 --skip-license
