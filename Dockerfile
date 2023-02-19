@@ -67,7 +67,7 @@ RUN chmod +x optix75.sh
 RUN mkdir /opt/optix75
 RUN ./optix75.sh --prefix=/opt/optix75 --skip-license
 RUN rm optix75.sh
-RUN git clone https://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@github.com/uwsbel/chrono-internal.git -b sandbox/lunar_sensor
+RUN git clone https://<personal_access_token>@github.com/uwsbel/chrono-internal.git -b sandbox/lunar_sensor
 RUN mkdir chrono-internal/build
 RUN cd chrono-internal/build && cmake ../ -G Ninja \
  -DCMAKE_BUILD_TYPE=Release \
