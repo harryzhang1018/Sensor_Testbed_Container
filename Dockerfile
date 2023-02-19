@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.4.0-devel-ubuntu20.04
+FROM nvidia/cuda:11.8.0-devel-ubuntu20.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -53,10 +53,13 @@ CMD ["bash"]
 
 ############ SECTION 2 ------Chrono------- ############
 #chrono dependency installed here
-RUN apt update && apt install -y libirrlicht-dev libnvidia-gl-515 libeigen3-dev cmake cmake-curses-gui libglu1-mesa-dev freeglut3-dev mesa-common-dev wget swig libglfw3 libglfw3-dev x11proto-gl-dev glew-utils git libxxf86vm-dev libglew-dev openmpi-common libopenmpi-dev ninja-build python3-numpy
+RUN apt update && apt install -y libirrlicht-dev libnvidia-gl-515 libeigen3-dev cmake cmake-curses-gui libglu1-mesa-dev freeglut3-dev mesa-common-dev wget swig libglfw3 libglfw3-dev x11proto-gl-dev glew-utils git libxxf86vm-dev libglew-dev openmpi-common libopenmpi-dev ninja-build python3-numpy 
 
 # Clean up to reduce image size
 RUN apt-get clean && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
+# Make ssh dir
+RUN mkdir /root/.ssh/
 
 #RUN wget https://uwmadison.box.com/shared/static/97fkm979iuccls990ottx5g5bpva8pwe.sh -O optix75.sh
 COPY NVIDIA-OptiX-SDK-7.5.0-linux64-x86_64.sh ./optix75.sh
@@ -64,9 +67,9 @@ RUN chmod +x optix75.sh
 RUN mkdir /opt/optix75
 RUN ./optix75.sh --prefix=/opt/optix75 --skip-license
 RUN rm optix75.sh
-RUN git clone https://github.com/projectchrono/chrono.git -b feature/sensor
-RUN mkdir chrono/build
-RUN cd chrono/build && cmake ../ -G Ninja \
+RUN git clone https://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@github.com/uwsbel/chrono-internal.git -b sandbox/lunar_sensor
+RUN mkdir chrono-internal/build
+RUN cd chrono-internal/build && cmake ../ -G Ninja \
  -DCMAKE_BUILD_TYPE=Release \
  -DBUILD_BENCHMARKING=OFF \
  -DBUILD_DEMOS=OFF \
@@ -80,7 +83,23 @@ RUN cd chrono/build && cmake ../ -G Ninja \
  -DEigen3_DIR=/usr/lib/cmake/eigen3 \
  -DOptiX_INCLUDE=/opt/optix75/include \
  -DOptiX_INSTALL_DIR=/opt/optix75 \
- #-DNUMPY_INCLUDE_DIR=/usr/lib/python3/dist-packages/numpy/core/include \
+ -DUSE_CUDA_NVRTC=OFF \
+ -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs \
+ -DCUDA_NVCC_EXECUTABLE=/usr/local/cuda/bin/nvcc \
+ -DCUDA_ARCH_NAME=Turing \ 
+ #This should be corresponds with your own GPU Arch. For the further reference, see the link: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/ 
  && ninja && sudo ninja install
 
+RUN mkdir chrono-internal/chrono_sensor_ros_node
+ADD ./chrono_sensor_ros_node /root/dev_ws/chrono-internal/chrono_sensor_ros_node
+RUN mkdir chrono-internal/chrono_sensor_ros_node/build
+RUN cd chrono-internal/chrono_sensor_ros_node/build && cmake ../ -G Ninja \
+ -DCMAKE_BUILD_TYPE=Release \
+ -DChrono_DIR=/root/dev_ws/chrono-internal/build/cmake/ \
+ && ninja
 
+RUN mkdir src/image_subscriber
+COPY streamer.py /root/dev_ws/src/image_subscriber/
+
+RUN apt update && apt install -y tmux 
+#xfce4 xfce4-goodies tightvncserver
